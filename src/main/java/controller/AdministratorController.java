@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date; // Added for election date management
 import java.util.List;
 
 /**
@@ -205,64 +206,64 @@ public class AdministratorController {
         if (file == null || !file.exists()) {
             throw new IOException("File does not exist or is null");
         }
-        
+
         // Load existing voters
         List<Voter> existingVoters = DataManager.loadVoters();
-        
+
         // Create a set of existing voter IDs for quick lookup
         java.util.Set<String> existingIds = new java.util.HashSet<>();
         for (Voter voter : existingVoters) {
             existingIds.add(voter.getId());
         }
-        
+
         int importedCount = 0;
         int duplicateCount = 0;
         int errorCount = 0;
-        
+
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line = reader.readLine(); // Read header
-            
+
             // Validate header
             if (line == null || !line.trim().toLowerCase().startsWith("voterid")) {
                 throw new IOException("Invalid CSV format. Expected header: voterId,password");
             }
-            
+
             // Read data rows
             while ((line = reader.readLine()) != null) {
                 if (line.trim().isEmpty()) {
                     continue; // Skip empty lines
                 }
-                
+
                 try {
                     String[] parts = line.split(",");
                     if (parts.length < 2) {
                         errorCount++;
                         continue;
                     }
-                    
+
                     String voterId = parts[0].trim();
                     String plainPassword = parts[1].trim();
-                    
+
                     // Skip if voterId is empty
                     if (voterId.isEmpty() || plainPassword.isEmpty()) {
                         errorCount++;
                         continue;
                     }
-                    
+
                     // Check for duplicates (preserve existing voter data)
                     if (existingIds.contains(voterId)) {
                         duplicateCount++;
                         continue; // Skip duplicate, preserve existing hasVoted status
                     }
-                    
+
                     // Hash the password
                     String hashedPassword = PasswordUtils.hashPassword(plainPassword);
-                    
+
                     // Create new voter
                     Voter newVoter = new Voter(voterId, hashedPassword);
                     existingVoters.add(newVoter);
                     existingIds.add(voterId); // Add to set to prevent duplicates in same import
-                    
+
                     importedCount++;
                 } catch (Exception e) {
                     errorCount++;
@@ -270,23 +271,94 @@ public class AdministratorController {
                 }
             }
         }
-        
+
         // Save all voters (existing + new)
         DataManager.saveVoters(existingVoters);
-        
+
         // Build summary message
         StringBuilder summary = new StringBuilder();
         summary.append(importedCount).append(" voter(s) imported successfully");
-        
+
         if (duplicateCount > 0) {
             summary.append(", ").append(duplicateCount).append(" duplicate(s) skipped");
         }
-        
+
         if (errorCount > 0) {
             summary.append(", ").append(errorCount).append(" error(s) encountered");
         }
-        
+
         return summary.toString();
+    }
+
+    /**
+     * Sets the start and end dates for the election.
+     *
+     * @param startDate The start date of the election.
+     * @param endDate The end date of the election.
+     * @return true if dates are set successfully, false otherwise.
+     */
+    public boolean setElectionDates(Date startDate, Date endDate) {
+        if (startDate == null || endDate == null || startDate.after(endDate)) {
+            return false;
+        }
+        Election election = Election.getInstance();
+        election.setStartDate(startDate);
+        election.setEndDate(endDate);
+        // In a real application, you might want to save the election state to DataManager here.
+        return true;
+    }
+
+    /**
+     * Starts the election, setting its status to ACTIVE.
+     * The election can only be started if it's currently CLOSED and dates are set.
+     *
+     * @return true if the election was successfully started, false otherwise.
+     */
+    public boolean startElection() {
+        Election election = Election.getInstance();
+        if (election.getStatus() == Election.ElectionStatus.CLOSED && election.getStartDate() != null && election.getEndDate() != null) {
+            // Check if current date is within the election period (optional, based on detailed requirements)
+            // For simplicity, we are allowing start if status is CLOSED and dates are set.
+            election.startElection();
+            // In a real application, you might want to save the election state to DataManager here.
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Stops the election, setting its status to CLOSED.
+     * The election can only be stopped if it's currently ACTIVE.
+     *
+     * @return true if the election was successfully stopped, false otherwise.
+     */
+    public boolean stopElection() {
+        Election election = Election.getInstance();
+        if (election.getStatus() == Election.ElectionStatus.ACTIVE) {
+            election.stopElection();
+            // In a real application, you might want to save the election state to DataManager here.
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Retrieves the current status of the election.
+     *
+     * @return The current ElectionStatus.
+     */
+    public Election.ElectionStatus getElectionStatus() {
+        return Election.getInstance().getStatus();
+    }
+
+    /**
+     * Calculates and returns the current vote tally from the Election instance.
+     * Results are sorted by vote count in descending order.
+     *
+     * @return List of candidates sorted by vote count (highest first)
+     */
+    public List<Candidate> calculateTally() {
+        return Election.getInstance().calculateTally();
     }
 }
 

@@ -1,7 +1,7 @@
 package view;
 
 import controller.AdministratorController;
-import controller.Election;
+import controller.Election; // Re-added for ElectionStatus type resolution
 import model.Candidate;
 import model.Voter;
 import utils.DataManager;
@@ -472,37 +472,49 @@ public class AdminPanel extends JPanel {
      * Handles starting the election.
      */
     private void handleStartElection() {
-        Election election = Election.getInstance();
-        election.startElection();
-        updateElectionStatus();
-        JOptionPane.showMessageDialog(this,
-                "Election started successfully!",
-                "Success",
-                JOptionPane.INFORMATION_MESSAGE);
+        AdministratorController adminController = new AdministratorController();
+        if (adminController.startElection()) {
+            updateElectionStatus();
+            JOptionPane.showMessageDialog(this,
+                    "Election started successfully!",
+                    "Success",
+                    JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(this,
+                    "Failed to start election. It might already be active or dates are not set.",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
     }
     
     /**
      * Handles stopping the election.
      */
     private void handleStopElection() {
-        Election election = Election.getInstance();
-        election.stopElection();
-        updateElectionStatus();
-        JOptionPane.showMessageDialog(this,
-                "Election stopped successfully!",
-                "Success",
-                JOptionPane.INFORMATION_MESSAGE);
+        AdministratorController adminController = new AdministratorController();
+        if (adminController.stopElection()) {
+            updateElectionStatus();
+            JOptionPane.showMessageDialog(this,
+                    "Election stopped successfully!",
+                    "Success",
+                    JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(this,
+                    "Failed to stop election. It might already be closed.",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
     }
     
     /**
      * Updates the election status display.
      */
     private void updateElectionStatus() {
-        Election election = Election.getInstance();
-        Election.ElectionStatus status = election.getStatus();
-        
+        AdministratorController adminController = new AdministratorController();
+        Election.ElectionStatus status = adminController.getElectionStatus();
+
         electionStatusLabel.setText("Status: " + status.toString());
-        
+
         startElectionButton.setEnabled(status == Election.ElectionStatus.CLOSED);
         stopElectionButton.setEnabled(status == Election.ElectionStatus.ACTIVE);
     }
@@ -529,9 +541,9 @@ public class AdminPanel extends JPanel {
      */
     private void refreshResults() {
         resultsTableModel.setRowCount(0);
-        Election election = Election.getInstance();
-        List<Candidate> results = election.calculateTally();
-        
+        AdministratorController adminController = new AdministratorController();
+        List<Candidate> results = adminController.calculateTally();
+
         for (Candidate candidate : results) {
             resultsTableModel.addRow(new Object[]{
                     candidate.getName(),
