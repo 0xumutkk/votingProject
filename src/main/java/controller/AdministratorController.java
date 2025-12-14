@@ -317,14 +317,31 @@ public class AdministratorController {
     /**
      * Starts the election, setting its status to ACTIVE.
      * The election can only be started if it's currently CLOSED and dates are set.
+     * Resets all vote counts and voter statuses when starting a new election.
      *
      * @return true if the election was successfully started, false otherwise.
      */
     public boolean startElection() {
         Election election = Election.getInstance();
         if (election.getStatus() == Election.ElectionStatus.CLOSED && election.getStartDate() != null && election.getEndDate() != null) {
-            // Check if current date is within the election period (optional, based on detailed requirements)
-            // For simplicity, we are allowing start if status is CLOSED and dates are set.
+            // Reset vote counts for all candidates
+            List<Candidate> candidates = DataManager.loadCandidates();
+            for (Candidate candidate : candidates) {
+                candidate.setVoteCount(0);
+            }
+            DataManager.saveCandidates(candidates);
+            
+            // Reset voting status for all voters
+            List<Voter> voters = DataManager.loadVoters();
+            for (Voter voter : voters) {
+                voter.setHasVoted(false);
+            }
+            DataManager.saveVoters(voters);
+            
+            // Clear vote records for the new election
+            DataManager.saveVoteRecords(new ArrayList<>());
+            
+            // Start the election
             election.startElection();
             // In a real application, you might want to save the election state to DataManager here.
             return true;
