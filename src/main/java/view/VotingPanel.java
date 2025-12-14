@@ -1,11 +1,13 @@
 package view;
 
+import controller.AdministratorController;
 import controller.VotingController;
 import model.Candidate;
 import model.Voter;
 import utils.DataManager;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -25,6 +27,7 @@ public class VotingPanel extends JPanel {
     private ButtonGroup candidateButtonGroup;
     private JPanel candidatesPanel;
     private JButton voteButton;
+    private JButton viewResultsButton;
     private JButton logoutButton;
     private JLabel statusLabel;
     private List<Candidate> candidates;
@@ -53,6 +56,7 @@ public class VotingPanel extends JPanel {
         candidatesPanel.setLayout(new BoxLayout(candidatesPanel, BoxLayout.Y_AXIS));
         
         voteButton = new JButton("Vote");
+        viewResultsButton = new JButton("View Results");
         logoutButton = new JButton("Logout");
         statusLabel = new JLabel();
     }
@@ -82,6 +86,7 @@ public class VotingPanel extends JPanel {
         // Button panel
         JPanel buttonPanel = new JPanel(new FlowLayout());
         buttonPanel.add(voteButton);
+        buttonPanel.add(viewResultsButton);
         buttonPanel.add(logoutButton);
         add(buttonPanel, BorderLayout.SOUTH);
         
@@ -103,6 +108,13 @@ public class VotingPanel extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 mainFrame.showLogin();
+            }
+        });
+        
+        viewResultsButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                showResults();
             }
         });
     }
@@ -234,6 +246,44 @@ public class VotingPanel extends JPanel {
     public void setVoter(Voter voter) {
         this.currentVoter = voter;
         refreshCandidates();
+    }
+    
+    /**
+     * Displays election results in a dialog window.
+     */
+    private void showResults() {
+        AdministratorController adminController = new AdministratorController();
+        List<Candidate> results = adminController.calculateTally();
+        
+        // Create table model
+        String[] columnNames = {"Name", "Position", "Vote Count"};
+        DefaultTableModel tableModel = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        
+        // Populate table with results
+        for (Candidate candidate : results) {
+            tableModel.addRow(new Object[]{
+                    candidate.getName(),
+                    candidate.getPosition(),
+                    candidate.getVoteCount()
+            });
+        }
+        
+        // Create table
+        JTable resultsTable = new JTable(tableModel);
+        resultsTable.setFillsViewportHeight(true);
+        JScrollPane scrollPane = new JScrollPane(resultsTable);
+        scrollPane.setPreferredSize(new Dimension(500, 300));
+        
+        // Show in dialog
+        JOptionPane.showMessageDialog(this,
+                scrollPane,
+                "Election Results",
+                JOptionPane.INFORMATION_MESSAGE);
     }
 }
 
