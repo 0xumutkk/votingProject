@@ -33,6 +33,9 @@ public class AdminPanel extends JPanel {
     
     // Election Control Components
     private JLabel electionStatusLabel;
+    private JTextField startDateField;
+    private JTextField endDateField;
+    private JButton setElectionDatesButton;
     private JButton startElectionButton;
     private JButton stopElectionButton;
     
@@ -82,6 +85,9 @@ public class AdminPanel extends JPanel {
         
         // Election Control Components
         electionStatusLabel = new JLabel("Status: CLOSED");
+        startDateField = new JTextField(16);
+        endDateField = new JTextField(16);
+        setElectionDatesButton = new JButton("Set Election Dates");
         startElectionButton = new JButton("Start Election");
         stopElectionButton = new JButton("Stop Election");
         
@@ -296,19 +302,40 @@ public class AdminPanel extends JPanel {
         gbc.anchor = GridBagConstraints.CENTER;
         
         // Status label
+        // Status label
         gbc.gridx = 0;
         gbc.gridy = 0;
-        gbc.gridwidth = 2;
+        gbc.gridwidth = 4; // Span across 4 columns
         electionStatusLabel.setFont(new Font(electionStatusLabel.getFont().getName(), Font.BOLD, 16));
         panel.add(electionStatusLabel, gbc);
-        
-        // Buttons
-        gbc.gridwidth = 1;
+
+        // Start Date
         gbc.gridy = 1;
         gbc.gridx = 0;
-        panel.add(startElectionButton, gbc);
-        
+        gbc.gridwidth = 1;
+        panel.add(new JLabel("Start Date (yyyy-MM-dd HH:mm):"), gbc);
         gbc.gridx = 1;
+        panel.add(startDateField, gbc);
+
+        // End Date
+        gbc.gridx = 2;
+        panel.add(new JLabel("End Date (yyyy-MM-dd HH:mm):"), gbc);
+        gbc.gridx = 3;
+        panel.add(endDateField, gbc);
+
+        // Set Dates Button
+        gbc.gridy = 2;
+        gbc.gridx = 0;
+        gbc.gridwidth = 4; // Span across 4 columns
+        panel.add(setElectionDatesButton, gbc);
+
+        // Election Control Buttons
+        gbc.gridy = 3;
+        gbc.gridx = 0;
+        gbc.gridwidth = 2; // Span across 2 columns
+        panel.add(startElectionButton, gbc);
+
+        gbc.gridx = 2;
         panel.add(stopElectionButton, gbc);
         
         updateElectionStatus();
@@ -364,6 +391,7 @@ public class AdminPanel extends JPanel {
     private void setupEventHandlers() {
         startElectionButton.addActionListener(e -> handleStartElection());
         stopElectionButton.addActionListener(e -> handleStopElection());
+        setElectionDatesButton.addActionListener(e -> handleSetElectionDates());
         refreshResultsButton.addActionListener(e -> refreshResults());
     }
     
@@ -655,6 +683,10 @@ public class AdminPanel extends JPanel {
                 
                 refreshVotersTable();
             } catch (Exception e) {
+                // Log the exception details to the console for debugging
+                System.err.println("Error during voter import in AdminPanel:");
+                e.printStackTrace(); // Print the stack trace here
+
                 JOptionPane.showMessageDialog(this,
                         "Error importing voters: " + e.getMessage(),
                         "Import Error",
@@ -694,6 +726,47 @@ public class AdminPanel extends JPanel {
         refreshVotersTable();
         updateElectionStatus();
         refreshResults();
+    }
+
+    /**
+     * Handles setting the election start and end dates.
+     */
+    private void handleSetElectionDates() {
+        String startDateStr = startDateField.getText().trim();
+        String endDateStr = endDateField.getText().trim();
+
+        if (startDateStr.isEmpty() || endDateStr.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                    "Please enter both start and end dates.",
+                    "Validation Error",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+            java.text.SimpleDateFormat dateFormat = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm");
+            java.util.Date startDate = dateFormat.parse(startDateStr);
+            java.util.Date endDate = dateFormat.parse(endDateStr);
+
+            AdministratorController adminController = new AdministratorController();
+            if (adminController.setElectionDates(startDate, endDate)) {
+                JOptionPane.showMessageDialog(this,
+                        "Election dates set successfully!",
+                        "Success",
+                        JOptionPane.INFORMATION_MESSAGE);
+                updateElectionStatus();
+            } else {
+                JOptionPane.showMessageDialog(this,
+                        "Failed to set election dates. Please ensure start date is before end date.",
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (java.text.ParseException e) {
+            JOptionPane.showMessageDialog(this,
+                    "Invalid date format. Please use yyyy-MM-dd HH:mm (e.g., 2025-12-31 23:59).",
+                    "Format Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
     }
 }
 

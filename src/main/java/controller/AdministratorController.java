@@ -267,6 +267,8 @@ public class AdministratorController {
                     importedCount++;
                 } catch (Exception e) {
                     errorCount++;
+                    System.err.println("Error processing voter CSV line: " + line);
+                    e.printStackTrace(); // Print stack trace
                     // Continue processing other lines
                 }
             }

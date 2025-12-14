@@ -47,11 +47,11 @@ public class DataManager {
                 }
                 
                 String[] parts = line.split(",");
-                if (parts.length >= 3) {
+                if (parts.length >= 2) {
                     Voter voter = new Voter();
                     voter.setId(parts[0].trim());
-                    voter.setHasVoted(Boolean.parseBoolean(parts[1].trim()));
-                    voter.setPassword(parts[2].trim());
+                    // hasVoted is managed internally by the application, not imported directly via CSV for initial setup
+                    voter.setPassword(parts[1].trim());
                     voters.add(voter);
                 }
             }
@@ -73,13 +73,12 @@ public class DataManager {
     public static void saveVoters(List<Voter> voters) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(VOTERS_FILE))) {
             // Write header
-            writer.write("id,hasVoted,password");
+            writer.write("id,password");
             writer.newLine();
             
             // Write data
             for (Voter voter : voters) {
                 writer.write(voter.getId() + "," + 
-                           voter.isHasVoted() + "," + 
                            voter.getPassword());
                 writer.newLine();
             }
@@ -270,7 +269,7 @@ public class DataManager {
             
             // Write data
             for (Administrator admin : administrators) {
-                writer.write(admin.getUsername() + "," + admin.getPassword());
+                writer.write(admin.getUsername() + "," + PasswordUtils.hashPassword(admin.getPassword()));
                 writer.newLine();
             }
         } catch (IOException e) {

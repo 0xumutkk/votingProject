@@ -44,7 +44,9 @@ public class PasswordUtils {
             
             return hexString.toString();
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("SHA-256 algorithm not available", e);
+            // Log the error or handle it more gracefully without crashing
+            System.err.println("SHA-256 algorithm not available: " + e.getMessage());
+            return ""; // Return an empty string or null to indicate failure
         }
     }
 }
