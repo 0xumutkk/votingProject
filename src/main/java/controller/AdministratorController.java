@@ -224,8 +224,8 @@ public class AdministratorController {
             String line = reader.readLine(); // Read header
 
             // Validate header
-            if (line == null || !line.trim().toLowerCase().startsWith("voterid")) {
-                throw new IOException("Invalid CSV format. Expected header: voterId,password");
+            if (line == null || !line.trim().toLowerCase().startsWith("id,hasvoted,password")) {
+                throw new IOException("Invalid CSV format. Expected header: id,hasVoted,password");
             }
 
             // Read data rows
@@ -236,17 +236,20 @@ public class AdministratorController {
 
                 try {
                     String[] parts = line.split(",");
-                    if (parts.length < 2) {
+                    if (parts.length < 3) {
                         errorCount++;
+                        System.err.println("Error processing voter CSV line (insufficient parts): " + line);
                         continue;
                     }
 
                     String voterId = parts[0].trim();
-                    String plainPassword = parts[1].trim();
+                    boolean hasVoted = Boolean.parseBoolean(parts[1].trim());
+                    String plainPassword = parts[2].trim();
 
-                    // Skip if voterId is empty
+                    // Skip if voterId or plainPassword is empty
                     if (voterId.isEmpty() || plainPassword.isEmpty()) {
                         errorCount++;
+                        System.err.println("Error processing voter CSV line (empty voterId or password): " + line);
                         continue;
                     }
 
@@ -261,6 +264,7 @@ public class AdministratorController {
 
                     // Create new voter
                     Voter newVoter = new Voter(voterId, hashedPassword);
+                    newVoter.setHasVoted(hasVoted);
                     existingVoters.add(newVoter);
                     existingIds.add(voterId); // Add to set to prevent duplicates in same import
 

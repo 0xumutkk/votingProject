@@ -66,8 +66,7 @@ public class Main {
         
         // Create default admin if it doesn't exist
         if (!adminExists) {
-            String hashedPassword = PasswordUtils.hashPassword("admin");
-            Administrator defaultAdmin = new Administrator("admin", hashedPassword);
+            Administrator defaultAdmin = new Administrator("admin", "admin"); // Pass plain text password
             administrators.add(defaultAdmin);
             DataManager.saveAdministrators(administrators);
             System.out.println("Default administrator created: username='admin', password='admin'");
